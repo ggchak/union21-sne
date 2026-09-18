@@ -1,0 +1,12 @@
+README.md
+pyproject.toml
+tests/test_union21.py
+union21/__init__.py
+union21/analise.py
+union21/cosmologia.py
+union21/diagnosticos.py
+union21.egg-info/PKG-INFO
+union21.egg-info/SOURCES.txt
+union21.egg-info/dependency_links.txt
+union21.egg-info/requires.txt
+union21.egg-info/top_level.txt

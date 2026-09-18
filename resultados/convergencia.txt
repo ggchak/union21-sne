@@ -1,0 +1,7 @@
+Cadeias: 4 × 22000 passos retidos (sem thinning)
+
+   parâmetro     média    desvio      MCSE  split-R̂       ESS       j*         r  situação
+     Omega_m    0.2801    0.1133   0.00104    1.0003     11831      771   0.00038  ok
+Omega_Lambda    0.6608    0.2110   0.00206    1.0005     10532      704   0.00042  ok
+
+Critérios: split-R̂ < 1.01 (guia, não garantia); j* > 20 e r < 0.01 (Dunkley et al. 2005).

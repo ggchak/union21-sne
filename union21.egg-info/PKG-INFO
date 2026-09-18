@@ -1,0 +1,139 @@
+Metadata-Version: 2.4
+Name: union21
+Version: 1.0.0
+Summary: Inferência bayesiana de (Omega_m, Omega_Lambda) com as SNe Ia do Union2.1
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: numpy>=1.24
+Requires-Dist: scipy>=1.10
+Requires-Dist: matplotlib>=3.7
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0; extra == "dev"
+Requires-Dist: jupyter; extra == "dev"
+
+# union21 — $(\Omega_m,\Omega_\Lambda)$ a partir das supernovas do Union2.1
+
+Inferência bayesiana do posterior bidimensional em $(\Omega_m,\Omega_\Lambda)$,
+**sem impor planura**, a partir dos módulos de distância das 580 supernovas Ia da
+compilação Union2.1, com a matriz de covariância $580\times580$ **com
+sistemáticas**, zero-point marginalizado analiticamente e amostragem por
+Metropolis–Hastings.
+
+![contornos](resultados/figuras/contornos.png)
+
+## Resultados
+
+Quatro cadeias de 25 000 passos (3 000 de aquecimento descartados, sem
+afinamento), 88 000 amostras retidas:
+
+| | mediana | 68% | 95% |
+|---|---|---|---|
+| $\Omega_m$ | 0,283 | +0,112 / −0,120 | [0,052; 0,497] |
+| $\Omega_\Lambda$ | 0,669 | +0,203 / −0,225 | [0,230; 1,052] |
+| $\Omega_k$ (derivado) | 0,047 | +0,332 / −0,304 | [−0,518; 0,696] |
+| $q_0$ (derivado) | −0,529 | +0,178 / −0,157 | [−0,831; −0,182] |
+
+Máximo a posteriori em $(\Omega_m,\Omega_\Lambda) = (0{,}291;\ 0{,}696)$, com
+$\chi^2_{\min} = 545{,}1$ para 577 graus de liberdade ($\chi^2/\mathrm{dof} = 0{,}945$).
+A correlação posterior entre os dois parâmetros é $0{,}84$ e a probabilidade
+posterior de expansão acelerada hoje é $P(q_0<0\mid D) = 0{,}9994$. O intervalo de
+$\Omega_k$ é consistente com um universo espacialmente plano.
+
+### Convergência
+
+```
+   parâmetro     média    desvio      MCSE  split-R̂       ESS       j*         r
+     Omega_m    0.2801    0.1133   0.00104    1.0003     11831      771   0.00038
+Omega_Lambda    0.6608    0.2110   0.00206    1.0005     10532      704   0.00042
+```
+
+Taxa de aceitação 0,386 nas quatro cadeias. Critérios adotados: split-$\hat R$ <
+1,01; $j_\star > 20$ e $r < 0{,}01$ no diagnóstico espectral (Dunkley et al. 2005).
+Relatório completo em [`resultados/convergencia.txt`](resultados/convergencia.txt)
+e vínculos numéricos em [`resultados/resultados.json`](resultados/resultados.json).
+
+## Método
+
+* **Modelo.** FLRW com matéria, curvatura e constante cosmológica,
+  $E^2(z)=\Omega_m(1+z)^3+\Omega_k(1+z)^2+\Omega_\Lambda$ com
+  $\Omega_k=1-\Omega_m-\Omega_\Lambda$; $\Omega_r = 0$. A distância comóvel é
+  integrada por quadratura de Gauss–Legendre vetorizada, com erro relativo da
+  ordem de $10^{-9}$ verificado contra `scipy.integrate.quad`.
+* **Verossimilhança.** Gaussiana com a covariância completa. $C$ é fatorada por
+  Cholesky uma única vez e cada avaliação usa substituições triangulares;
+  $C^{-1}$ nunca é formada. A diagonal de $C$ já contém as variâncias dos módulos
+  de distância, e nenhum termo de erro é somado a ela.
+* **Zero-point.** $\mu_{\rm th}=\mu_{\rm forma}(z;\Omega_m,\Omega_\Lambda)+\mathcal M$,
+  com $\mathcal M$ marginalizado analiticamente sob prior plano:
+  $\chi^2_{\rm marg}=A-B^2/D+\ln(D/2\pi)$, sendo $A=\Delta^TC^{-1}\Delta$,
+  $B=\Delta^TC^{-1}\mathbf 1$ e $D=\mathbf 1^TC^{-1}\mathbf 1$
+  (Goliath et al. 2001; Amanullah et al. 2010, Apêndice C). Em consequência, o
+  resultado independe do $H_0$ fiducial e as supernovas sozinhas não vinculam $H_0$.
+* **Prior.** Plano e próprio em $0\le\Omega_m\le2$ e $-1\le\Omega_\Lambda\le3$.
+  Pontos com $E^2(z)\le0$ no intervalo dos dados (universos sem Big Bang) ou com
+  $D_L\le0$ têm posterior $-\infty$ e são rejeitados.
+* **Amostragem.** Metropolis–Hastings com passeio aleatório gaussiano. A
+  covariância da proposta é estimada em um aquecimento curto, escalada por
+  $2{,}38^2/d$ e congelada antes da fase retida. Quatro cadeias partem de pontos
+  dispersos sorteados do prior; estados rejeitados são gravados novamente.
+
+## Uso
+
+```bash
+pip install -e ".[dev]"
+pytest -q                                    # testes de aceitação
+jupyter lab notebooks/analise_union21.ipynb  # análise completa (~2 min)
+```
+
+## Estrutura
+
+```
+union21/cosmologia.py     FLRW: E, H, χ, D_M, D_A, D_L, μ, idade, η, dV/(dz dΩ)
+union21/analise.py        leitura e validação dos dados, verossimilhança, Metropolis-Hastings
+union21/diagnosticos.py   τ_int, ESS, MCSE, split-R̂, espectro de potências
+tests/test_union21.py     testes de aceitação (cosmologia, amostrador, verossimilhança, diagnósticos)
+notebooks/                a análise completa, com as deduções e as verificações
+dados/                    SCPUnion2.1_mu_vs_z.txt e SCPUnion2.1_covmat_sys.txt
+resultados/               figuras, relatório de convergência e vínculos
+```
+
+Os testes cobrem, entre outros: $E(0)=1$, a lei de Hubble no limite de baixo
+redshift, $D_M=\chi$ para $\Omega_k=0$, a dualidade $D_L=(1+z)^2D_A$, a
+concordância da quadratura com `quad`, a rejeição de cosmologias sem Big Bang, a
+recuperação de um alvo gaussiano conhecido dentro do erro de Monte Carlo, a
+reprodutibilidade por semente, a repetição de estados rejeitados, a equivalência
+entre a marginalização analítica e a integração numérica em $\mathcal M$, e o
+comportamento esperado de ESS, $\hat R$ e do diagnóstico espectral em séries de
+propriedades conhecidas.
+
+## Reprodutibilidade
+
+Semente `20240916`; cada cadeia recebe uma semente derivada por
+`np.random.SeedSequence(semente).spawn(n)`, de modo que a mesma semente reproduz
+exatamente as cadeias.
+
+## Limitações
+
+Os módulos de distância do arquivo já incorporam as correções de padronização
+$\alpha$, $\beta$ e $\delta$ ajustadas pelo SCP; a coluna de probabilidade de
+hospedeira de baixa massa é lida mas não utilizada, pois reajustar essas
+correções exigiria os dados de *stretch* e cor de cada supernova. O prior plano
+em $\mathcal M$ é impróprio, o que é adequado para estimação de parâmetros mas
+impede o cálculo da evidência bayesiana sem limites finitos. Priores planos não
+são invariantes por reparametrização, e os resultados são condicionais às
+escolhas declaradas acima.
+
+## Referências
+
+* Suzuki et al. (2012), ApJ 746, 85 — compilação Union2.1.
+* Amanullah et al. (2010), ApJ 716, 712 — Apêndice C, parâmetros de incômodo lineares.
+* Goliath et al. (2001), A&A 380, 6 — marginalização analítica do zero-point.
+* Dunkley et al. (2005), MNRAS 356, 925 — diagnóstico espectral de convergência.
+* Gelman & Rubin (1992), Statist. Sci. 7, 457 — $\hat R$.
+* Roberts, Gelman & Gilks (1997), Ann. Appl. Probab. 7, 110 — escala ótima da proposta.
+* Hogg (1999), astro-ph/9905116 — medidas de distância em cosmologia.
+
+## Dados
+
+Os arquivos em `dados/` pertencem ao Supernova Cosmology Project (release
+Union2.1) e estão disponíveis em <http://supernova.lbl.gov/union/>.
